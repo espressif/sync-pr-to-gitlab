@@ -2,7 +2,6 @@
 #
 # SPDX-FileCopyrightText: 2021 Espressif Systems (Shanghai) CO LTD
 # SPDX-License-Identifier: Apache-2.0
-
 import json
 import os
 import re
@@ -10,14 +9,20 @@ import subprocess
 
 import gitlab
 import requests
-from git import Git, Repo
+from git import Git
+from git import Repo
+from gitlab.exceptions import GitlabGetError
 
+
+GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
+GITLAB_URL = os.environ['GITLAB_URL']
+GITLAB_TOKEN = os.environ['GITLAB_TOKEN']
 
 GITHUB_REMOTE = 'origin'
 GITLAB_REMOTE = 'gitlab'
 URL_HDR_LEN = 8
 
-LABEL_MERGE  = 'PR-Sync-Merge'
+LABEL_MERGE = 'PR-Sync-Merge'
 LABEL_REBASE = 'PR-Sync-Rebase'
 LABEL_UPDATE = 'PR-Sync-Update'
 
@@ -27,15 +32,14 @@ CODEOWNERS_CHECK_PATH = './tools/ci/check_codeowners.py'
 def pr_check_approver(pr_creator, pr_comments_url, pr_approve_labeller):
     print('Checking PR comment and affixed label...')
     # Requires Github Access Token, with Push Access
-    GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
 
-    r = requests.get(pr_comments_url, headers={'Authorization': 'token ' + GITHUB_TOKEN})
-    r_data = r.json()
+    res = requests.get(pr_comments_url, headers={'Authorization': 'token ' + GITHUB_TOKEN}, timeout=30)
+    r_data = res.json()
 
     for comment in reversed(r_data):
         comment_body = comment['body']
         if bool(re.match('sha=', comment_body, re.I)) and comment['user']['login'] == pr_approve_labeller != pr_creator:
-                return comment_body[4:]
+            return comment_body[4:]
 
     raise RuntimeError('PR Comment Error: Ensure that Command comment exists and PR commenter and labeller match!')
 
@@ -43,22 +47,17 @@ def pr_check_approver(pr_creator, pr_comments_url, pr_approve_labeller):
 def pr_check_forbidden_files(pr_files_url):
     print('Checking if PR modified forbidden files...')
     # Requires Github Access Token, with Push Access
-    GITHUB_TOKEN = os.environ['GITHUB_TOKEN']
 
-    r = requests.get(pr_files_url, headers={'Authorization': 'token ' + GITHUB_TOKEN})
-    r_data = r.json()
+    res = requests.get(pr_files_url, headers={'Authorization': 'token ' + GITHUB_TOKEN}, timeout=30)
+    r_data = res.json()
 
-    pr_files = [file_info['filename'] for file_info in r_data
-                if (file_info['filename']).find('.gitlab') != -1 or (file_info['filename']).find('.github') != -1]
+    pr_files = [file_info['filename'] for file_info in r_data if (file_info['filename']).find('.gitlab') != -1 or (file_info['filename']).find('.github') != -1]
     if pr_files:
         raise RuntimeError('PR modifying forbidden files!!!')
 
 
 def setup_project(repo_fullname, pr_base_branch):
     print('Connecting to GitLab...')
-    GITLAB_URL = os.environ['GITLAB_URL']
-    GITLAB_TOKEN = os.environ['GITLAB_TOKEN']
-
     gl = gitlab.Gitlab(url=GITLAB_URL, private_token=GITLAB_TOKEN)
     gl.auth()
     gl_project_url = f'{GITLAB_URL[:URL_HDR_LEN]}{GITLAB_TOKEN}:{GITLAB_TOKEN}@{GITLAB_URL[URL_HDR_LEN:]}/{repo_fullname}.git'
@@ -83,8 +82,8 @@ def check_update_label(pr_labels_list):
 def update_mr(pr_num, pr_head_branch, pr_commit_id, project_gl):
     try:
         project_gl.branches.get(pr_head_branch)
-    except:
-        raise RuntimeError('PR Update: No branch found on internal remote to update!')
+    except Exception as exc:
+        raise RuntimeError('PR Update: No branch found on internal remote to update!') from exc
 
     git = Git('.')
 
@@ -103,10 +102,10 @@ def update_mr(pr_num, pr_head_branch, pr_commit_id, project_gl):
 
 
 # Merge PRs with/without Rebase
-def sync_pr(pr_num, pr_head_branch, pr_commit_id, project_gl, pr_base_branch, pr_html_url, rebase_flag):
+def sync_pr(pr_num, pr_head_branch, pr_commit_id, project_gl, pr_base_branch, pr_html_url, rebase_flag):  # pylint: disable=too-many-arguments
     try:
         project_gl.branches.get(pr_head_branch)
-    except:
+    except GitlabGetError:
         pass
     else:
         raise RuntimeError('PR Merge/Rebase: Branch/MR already exists for PR!')
@@ -137,7 +136,7 @@ def sync_pr(pr_num, pr_head_branch, pr_commit_id, project_gl, pr_base_branch, pr
         new_cmt_msg = f'{commit.message}\n\nCloses {pr_html_url}'
 
         print('Amending commit message (Adding additional info about commit)...')
-        git.execute(['git','commit', '--amend', '-m', new_cmt_msg])
+        git.execute(['git', 'commit', '--amend', '-m', new_cmt_msg])
 
     print('Pushing to remote...')
     git.push('--set-upstream', GITLAB_REMOTE, pr_head_branch)
@@ -155,7 +154,7 @@ def notify_maintainers(pr_head_branch, pr_base_branch, project_gl, mr_iid):
         try:
             output = subprocess.check_output(cmd, shell=True, text=True, stderr=subprocess.STDOUT)
         except subprocess.CalledProcessError as exc:
-            raise RuntimeError(f'Command failed {exc.returncode} {exc.output}')
+            raise RuntimeError(f'Command failed {exc.returncode} {exc.output}') from exc
         codeowners_list.extend(output.splitlines())
 
     codeowners_list = list(set(filter(None, codeowners_list)))
@@ -176,8 +175,8 @@ def main():
         return
 
     # The path of the file with the complete webhook event payload. For example, /github/workflow/event.json.
-    with open(os.environ['GITHUB_EVENT_PATH'], 'r') as f:
-        event = json.load(f)
+    with open(os.environ['GITHUB_EVENT_PATH'], 'r', encoding='utf-8') as file:
+        event = json.load(file)
 
     pr_label = event['label']['name']
     pr_labels_list = event['pull_request']['labels']
@@ -203,7 +202,7 @@ def main():
     # Getting the PR title and body
     pr_title = event['pull_request']['title']
     idx = pr_title.find(os.environ['JIRA_PROJECT'])  # Finding the JIRA issue tag
-    pr_title_desc = pr_title[0:idx - 2] + ' (GitHub PR)'
+    pr_title_desc = pr_title[0 : idx - 2] + ' (GitHub PR)'
     pr_jira_issue = pr_title[idx:-1]
     pr_body = str(event['pull_request']['body'])
 
@@ -224,13 +223,22 @@ def main():
         raise RuntimeError('Illegal program flow!')
 
     print('Creating a merge request...')
-    mr = project_gl.mergerequests.create({'source_branch': pr_head_branch, 'target_branch': pr_base_branch, 'title': pr_title_desc, 'remove_source_branch': True})
+    mr = project_gl.mergerequests.create(
+        {
+            'source_branch': pr_head_branch,
+            'target_branch': pr_base_branch,
+            'title': pr_title_desc,
+            'remove_source_branch': True,
+        }
+    )
 
     print('Updating merge request description...')
     mr_desc = '## Description \n' + pr_body + '\n ##### (Add more info here)' + '\n## Related'
     mr_desc += '\n* Closes ' + pr_jira_issue
     mr_desc += '\n* Merges ' + pr_html_url
-    mr_desc += '\n## Release notes (Mandatory)\n* [component/development area] <Please update release notes, do NOT remove GitHub PR pointer> (' + pr_html_url + ')'
+    mr_desc += (
+        '\n## Release notes (Mandatory)\n* [component/development area] <Please update release notes, do NOT remove GitHub PR pointer> (' + pr_html_url + ')'
+    )
 
     mr.description = mr_desc
     mr.save()
