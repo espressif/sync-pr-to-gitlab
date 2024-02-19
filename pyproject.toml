@@ -19,7 +19,12 @@
     ]
 
     [project.optional-dependencies]
-        dev = ["commitizen", "pip-tools~=7.3", "pre-commit>=3.3"]
+        dev = [
+            "commitizen",
+            "pip-tools~=7.3",
+            "pre-commit>=3.3",
+            "types-requests",
+        ]
 
 [tool.setuptools_scm]
     write_to = "sync_pr_to_gitlab/version.py"
@@ -29,10 +34,10 @@
     skip-string-normalization = true # Avoids converting single quotes to double quotes in strings (pre-commit hook enforces single quotes in Python code)
 
 [tool.ruff]
-    line-length    = 160     # Specifies the maximum line length for ruff checks
-    target-version = "py311" # Specifies the target Python version for ruff checks
-    exclude = ["^venv/"]      # Paths to ignore during linting
-    select  = ['E', 'F', 'W'] # Types of issues ruff should check for
+    exclude        = ["^venv/"]      # Paths to ignore during linting
+    line-length    = 160             # Specifies the maximum line length for ruff checks
+    select         = ['E', 'F', 'W'] # Types of issues ruff should check for
+    target-version = "py311"         # Specifies the target Python version for ruff checks
 
 [tool.mypy]
     disallow_incomplete_defs = false    # Disallows defining functions with incomplete type annotations
