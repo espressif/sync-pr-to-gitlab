@@ -47,7 +47,9 @@ jobs:
   sync_prs_to_internal_codebase:
     name: GitHub PR to Internal Codebase Sync
     runs-on: ubuntu-latest
-    if: contains(['PR-Sync-Merge', 'PR-Sync-Rebase', 'PR-Sync-Update'], github.event.label.name)
+    if: (github.event.label.name == 'PR-Sync-Merge')   ||
+        (github.event.label.name == 'PR-Sync-Rebase')  ||
+        (github.event.label.name == 'PR-Sync-Update')
     steps:
       - uses: actions/checkout@v4
 

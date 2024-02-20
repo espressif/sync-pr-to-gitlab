@@ -21,4 +21,4 @@ RUN git config --system --add safe.directory /github/workspace
 
 COPY sync_pr_to_gitlab/github_pr_to_internal_pr.py /
 
-ENTRYPOINT ["/usr/bin/python3", "/github_pr_to_internal_pr.py"]
+ENTRYPOINT ["python", "/github_pr_to_internal_pr.py"]
