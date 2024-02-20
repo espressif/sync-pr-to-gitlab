@@ -3,6 +3,7 @@
 
 [project]
     authors = [
+        { name = "Laukik Hase (Espressif Systems)", email = "laukik.hase@espressif.com" },
         { name = "Tomas Sebestik (Espressif Systems)", email = "tomas.sebestik@espressif.com" },
     ]
     classifiers = ["Programming Language :: Python :: 3"]
@@ -29,15 +30,15 @@
 [tool.setuptools_scm]
     write_to = "sync_pr_to_gitlab/version.py"
 
-[tool.black]
-    line-length               = 160  # The maximum line length for Python code formatting
-    skip-string-normalization = true # Avoids converting single quotes to double quotes in strings (pre-commit hook enforces single quotes in Python code)
 
 [tool.ruff]
     exclude        = ["^venv/"]      # Paths to ignore during linting
     line-length    = 160             # Specifies the maximum line length for ruff checks
-    select         = ['E', 'F', 'W'] # Types of issues ruff should check for
+    lint.select    = ['E', 'F', 'W'] # Types of issues ruff should check for
     target-version = "py311"         # Specifies the target Python version for ruff checks
+
+    [tool.ruff.format] # See formatter config options at https://docs.astral.sh/ruff/formatter
+        quote-style = "single"
 
 [tool.mypy]
     disallow_incomplete_defs = false    # Disallows defining functions with incomplete type annotations

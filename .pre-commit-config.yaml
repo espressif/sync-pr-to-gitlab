@@ -18,10 +18,11 @@ repos:
       - id: double-quote-string-fixer # Converts single quotes to double quotes in strings
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.2.2
+    rev: v0.3.4
     hooks:
-      - id: ruff # Runs ruff linter (replaces flake8)
+      - id: ruff                                         # Linter
         args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format                                  # Formatter (replaces Black)
 
   - repo: https://github.com/asottile/reorder_python_imports
     rev: v3.12.0
@@ -29,7 +30,7 @@ repos:
       - id: reorder-python-imports # Reorders Python imports to a standard format (replaces isort)
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
+    rev: v1.9.0
     hooks:
       - id: mypy # Runs mypy for Python type checking
         additional_dependencies: ['types-all']
@@ -40,13 +41,8 @@ repos:
       - id: conventional-precommit-linter # Lints commit messages for conventional format
         stages: [commit-msg]
 
-  - repo: https://github.com/psf/black
-    rev: '24.2.0'
-    hooks:
-      - id: black # Formats Python code using black
-
   - repo: https://github.com/pylint-dev/pylint
-    rev: v3.0.3
+    rev: v3.1.0
     hooks:
       - id: pylint # Runs pylint on Python code
 
