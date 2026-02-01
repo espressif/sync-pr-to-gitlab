@@ -25,5 +25,5 @@ requests-toolbelt==1.0.0
     # via python-gitlab
 smmap==5.0.1
     # via gitdb
-urllib3==2.2.1
+urllib3==2.2.2
     # via requests
