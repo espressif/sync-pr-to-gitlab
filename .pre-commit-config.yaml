@@ -8,46 +8,46 @@ default_stages: [pre-commit]
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace # Removes trailing whitespaces from lines
       - id: end-of-file-fixer # Ensures files end with a newline
       - id: check-executables-have-shebangs # Checks executables have a proper shebang
       - id: mixed-line-ending # Detects mixed line endings (CRLF/LF)
         args: ['-f=lf'] # Forces files to use LF line endings
-      - id: double-quote-string-fixer # Converts single quotes to double quotes in strings
+      - id: double-quote-string-fixer # Converts double quotes to single quotes in strings
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.3.4
+    rev: v0.15.12
     hooks:
       - id: ruff                                         # Linter
         args: [--fix, --exit-non-zero-on-fix]
       - id: ruff-format                                  # Formatter (replaces Black)
 
   - repo: https://github.com/asottile/reorder_python_imports
-    rev: v3.12.0
+    rev: v3.16.0
     hooks:
       - id: reorder-python-imports # Reorders Python imports to a standard format (replaces isort)
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.9.0
+    rev: v2.0.0
     hooks:
       - id: mypy # Runs mypy for Python type checking
-        additional_dependencies: ['types-all']
+        additional_dependencies: [types-requests]
 
   - repo: https://github.com/espressif/conventional-precommit-linter
-    rev: v1.6.0
+    rev: v1.11.0
     hooks:
       - id: conventional-precommit-linter # Lints commit messages for conventional format
         stages: [commit-msg]
 
   - repo: https://github.com/pylint-dev/pylint
-    rev: v3.1.0
+    rev: v4.0.5
     hooks:
       - id: pylint # Runs pylint on Python code
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.6
+    rev: v2.4.2
     hooks:
       - id: codespell # Code spell checker
         args: ["--write-changes"]

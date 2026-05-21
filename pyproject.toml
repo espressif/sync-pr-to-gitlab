@@ -34,11 +34,12 @@
 [tool.ruff]
     exclude        = ["^venv/"]      # Paths to ignore during linting
     line-length    = 160             # Specifies the maximum line length for ruff checks
-    lint.select    = ['E', 'F', 'W'] # Types of issues ruff should check for
     target-version = "py311"         # Specifies the target Python version for ruff checks
 
     [tool.ruff.format] # See formatter config options at https://docs.astral.sh/ruff/formatter
         quote-style = "single"
+    [tool.ruff.lint]
+        select = ['E', 'F', 'W'] # Types of issues ruff should check for
 
 [tool.mypy]
     disallow_incomplete_defs = false    # Disallows defining functions with incomplete type annotations
@@ -95,7 +96,7 @@
     version_provider         = "scm"
 
     [tool.commitizen.customize]
-        bump_map = { "change" = "MINOR", "feat" = "MINOR", "fix" = "PATCH", "refactor" = "PATCH", "remove" = "PATCH", "revert" = "PATCH" }
+        bump_map = { change = "MINOR", feat = "MINOR", fix = "PATCH", refactor = "PATCH", remove = "PATCH", revert = "PATCH" }
         bump_pattern = "^(change|feat|fix|refactor|remove|revert)"
         change_type_order = [
             "change",

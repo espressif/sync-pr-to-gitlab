@@ -43,8 +43,9 @@ def pr_check_approver(pr_creator, pr_comments_url, pr_approve_labeller, esp_idf_
         comment_body = comment['body']
 
         if (
-            bool(re.match('sha=', comment_body, re.I)) and comment['user']['login'] == pr_approve_labeller
-            and (esp_idf_flow is False or pr_approve_labeller != pr_creator) # allow to be creator and approver the same person in non-esp-idf flow
+            bool(re.match('sha=', comment_body, re.I))
+            and comment['user']['login'] == pr_approve_labeller
+            and (esp_idf_flow is False or pr_approve_labeller != pr_creator)  # allow to be creator and approver the same person in non-esp-idf flow
         ):
             return comment_body[4:]
 
@@ -110,7 +111,9 @@ def update_mr(pr_num, pr_head_branch, pr_commit_id, project_gl):
 
 
 # Merge PRs with/without Rebase
-def sync_pr(pr_num, pr_head_branch, pr_commit_id, project_gl, pr_base_branch, pr_html_url, rebase_flag):  # pylint: disable=too-many-arguments
+def sync_pr(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    pr_num, pr_head_branch, pr_commit_id, project_gl, pr_base_branch, pr_html_url, rebase_flag
+):
     try:
         project_gl.branches.get(pr_head_branch)
     except GitlabGetError:
@@ -180,7 +183,7 @@ def main():
 
     if GITLAB_NAMESPACE == DEFAULT_GITLAB_NAMESPACE:
         github_repo_namespace = os.environ['GITHUB_REPOSITORY'].split('/')[0]
-        if  github_repo_namespace != DEFAULT_GITLAB_NAMESPACE:
+        if github_repo_namespace != DEFAULT_GITLAB_NAMESPACE:
             print(f'Cannot sync {github_repo_namespace} namespace repo to {DEFAULT_GITLAB_NAMESPACE} GitLab repo!')
             return
 
@@ -213,9 +216,22 @@ def main():
 
     # Getting the PR title and body
     pr_title = event['pull_request']['title']
-    idx = pr_title.find(os.environ['JIRA_PROJECT'])  # Finding the JIRA issue tag
-    pr_title_desc = pr_title[0 : idx - 2] + ' (GitHub PR)'
-    pr_jira_issue = pr_title[idx:-1]
+    jira_project = os.environ.get('JIRA_PROJECT')
+    pr_jira_issue = None
+    pr_title_desc = pr_title + ' (GitHub PR)'
+    if jira_project:
+        jira_issue_pattern = re.compile(r'(?<![A-Za-z0-9_-])' + re.escape(jira_project) + r'-\d+(?![A-Za-z0-9_-])')
+        jira_match = jira_issue_pattern.search(pr_title)
+        if jira_match:
+            pr_jira_issue = jira_match.group(0)
+            pr_title_without_jira = re.sub(
+                r'\s*[\[(]?\s*' + re.escape(pr_jira_issue) + r'\s*[\])]?\s*',
+                ' ',
+                pr_title,
+                count=1,
+            )
+            pr_title_without_jira = re.sub(r'\s{2,}', ' ', pr_title_without_jira).strip()
+            pr_title_desc = (pr_title_without_jira or pr_title) + ' (GitHub PR)'
     pr_body = str(event['pull_request']['body'])
 
     # Gitlab setup and cloning internal codebase
@@ -246,11 +262,14 @@ def main():
 
     print('Updating merge request description...')
     mr_desc = '## Description \n' + pr_body + '\n ##### (Add more info here)' + '\n## Related'
-    mr_desc += '\n* Closes ' + pr_jira_issue
+    if pr_jira_issue:
+        mr_desc += '\n* Closes ' + pr_jira_issue
     mr_desc += '\n* Merges ' + pr_html_url
     if is_esp_idf:
         mr_desc += (
-            '\n## Release notes (Mandatory)\n* [component/development area] <Please update release notes, do NOT remove GitHub PR pointer> (' + pr_html_url + ')'
+            '\n## Release notes (Mandatory)\n* [component/development area] <Please update release notes, do NOT remove GitHub PR pointer> ('
+            + pr_html_url
+            + ')'
         )
 
     mr.description = mr_desc

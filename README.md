@@ -61,8 +61,8 @@ jobs:
           GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
           GIT_CONFIG_NAME: ${{ secrets.GIT_CONFIG_NAME }}
           GIT_CONFIG_EMAIL: ${{ secrets.GIT_CONFIG_EMAIL }}
-          JIRA_PROJECT: SOMEPROJECT
-          GITLAB_NAMESPACE: SOMENAMESPACE  # This is optional (defaults to 'espressif' if not present)
+          JIRA_PROJECT: SOMEPROJECT  # Optional: adds "Closes <JIRA>" for PR titles containing SOMEPROJECT-<number>
+          GITLAB_NAMESPACE: SOMENAMESPACE  # Optional: defaults to 'espressif' if not present
 ```
 
 ### Environment Variables and Secrets Configuration
@@ -78,7 +78,7 @@ Below is a detailed table outlining the necessary configurations:
 | `GITLAB_TOKEN`     | Access token for creating MRs, comments, and updates in Espressif GitLab.  | Mandatory   |
 | `GIT_CONFIG_NAME`  | Username for Git commits when syncing, usually a bot name.                 | Mandatory   |
 | `GIT_CONFIG_EMAIL` | Email for Git commits when syncing, representing the bot email.            | Mandatory   |
-| `JIRA_PROJECT`     | The slug of the JIRA project where new issues will be created.             | Mandatory   |
+| `JIRA_PROJECT`     | Jira project slug; used to close the related Jira ticket if set.           | Optional    |
 | `GITLAB_NAMESPACE` | Namespace in GitLab where the project is located. Defaults to 'espressif'. | Optional    |
 
 ## Steps to Sync a PR (by user)
